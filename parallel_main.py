@@ -59,7 +59,7 @@ nmmo.config.Default.COMBAT_RANGE_REACH = 3
 nmmo.config.Default.COMBAT_MAGE_REACH = 3
 
 ##Population Size
-nmmo.config.Default.PLAYER_N = 64
+nmmo.config.Default.PLAYER_N = 10
 nmmo.config.Default.NPC_N = 0
 NPCs = nmmo.config.Default.NPC_N
 
@@ -68,7 +68,7 @@ nmmo.config.Default.PLAYER_N_OBS = 25
 nmmo.config.Default.PLAYER_VISION_RADIUS = 7
 
 
-EXP_NAME = 'LessCompete_'
+EXP_NAME = 'parallel_envs_1'
 
 env = nmmo.Env()
 player_N = env.config.PLAYER_N
@@ -130,7 +130,6 @@ all_visited = []
 
 # Set up max lifetime
 max_lifetime = 0
-max_xp = 0
 oldest = []
 pop_exp = []
 pop_life = []
@@ -157,11 +156,11 @@ for step in range(steps):
   #  replay_helper.save(replay_file, compress=True)
 
   current_oldest = life_durations[max(life_durations, key=life_durations.get)]
-  #if current_oldest > max_lifetime:
-  #  max_lifetime = current_oldest
+  if current_oldest > max_lifetime:
+    max_lifetime = current_oldest
 
   # Assign the top-all-time age record to the current tick
-  #max_lifetime_dict[step] = max_lifetime
+  max_lifetime_dict[step] = max_lifetime
 
   if (step+1)%10_000 == 0:
     print('reset env') 
@@ -176,7 +175,7 @@ for step in range(steps):
         parent = pick_best(env, player_N, life_durations, spawn_positions,)
         #env.realm.players.cull()
 
-        #'''
+        '''
         try:
         # Spawn individual in the same place as parent
           x, y = env.realm.players.entities[parent].pos
@@ -185,7 +184,7 @@ for step in range(steps):
         # Spawn individual at a random spawn location
           x, y = random.choice(spawn_positions)
         spawn_positions[i+1] = (x,y)
-        #'''
+        '''
         x,y = spawn_positions[i+1] 
 
         env.realm.players.spawn_individual(x, y, i+1)
@@ -209,12 +208,7 @@ for step in range(steps):
       XP_SUM += env.realm.players.entities[i+1].carving_exp.val
       XP_SUM += env.realm.players.entities[i+1].alchemy_exp.val
 
-
       LIFE_SUM += env.realm.players.entities[i+1].time_alive.val 
-    
-      if env.realm.players.entities[i+1].time_alive.val > max_lifetime:
-          max_lifetime = env.realm.players.entities[i+1].time_alive.val
-
 
       inp = get_input(env.realm.players.entities[i+1], obs[i+1]['Tile'], obs[i+1]['Entity'], env.realm.players.entities[i+1].pos)
       output, style, output_attack = model_dict[i+1](inp)
