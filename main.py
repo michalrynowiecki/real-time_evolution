@@ -73,7 +73,7 @@ EXP_NAME = 'LessCompete_'
 env = nmmo.Env()
 player_N = env.config.PLAYER_N
 
-obs = env.reset()#[0]
+obs = env.reset()
 
 env.realm.record_replay(replay_helper)
 
@@ -89,9 +89,6 @@ model_dict = {i+1: PolicyNet(output_size, output_size_attack)  for i in range(pl
 
 
 n_params = len(torch.nn.utils.parameters_to_vector(model_dict[1].parameters()))
-
-print('number of parameters in network:', n_params)
-
 
 # Forward pass with a feed forward NN
 action_list = []
@@ -122,8 +119,11 @@ for i in range(player_N):
   spawn_positions.append(env.realm.players.entities[i+1].spawn_pos)
 
 
-# Setting up the average lifetime dictionary
+# Set up the average lifetime dictionary
 avg_lifetime = {}
+
+# Set up the dead dictionary
+dead_dict = {}
 
 # Set up a list of all visited tiles by all agents
 all_visited = []
@@ -145,12 +145,13 @@ for step in range(steps):
 
   XP_SUM = 0
   LIFE_SUM = 0 
-  #print(step, obs[1]['Entity'][0])
-  #print(env.realm.players.entities.keys())
+  
+  # Every 100 steps, display the steps and write exp to a file
   if step%100==0:
     print(step) 
     with open(EXP_NAME+'_timestep.txt', 'w') as file:
       file.write(str(step))
+  
   # Uncomment for saving replays
   #if i%1000 == 0:
   #  replay_file = f"/content/replay1"

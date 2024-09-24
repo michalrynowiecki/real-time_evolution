@@ -173,4 +173,23 @@ def mutate(player_num, parent, model_dict, life_durations, alpha=0.01, dynamic_a
     with torch.no_grad():
       param.add_(torch.randn(param.size()) * alpha)
 
+import copy
+def delayedSpawn(env, life_durations, model_dict, spawn_positions, deadDict, player_N, threshold):
+    if deadDict[player_N] > threshold:
+        parent = pick_best(env, player_N, life_durations, spawn_positions,)
+        try:
+          x, y = env.realm.players.entities[parent].pos
+        except:
+          x, y = random.choice(spawn_positions)
+        
+        spawn_positions[player_N+1] = (x,y)
 
+        env.realm.players.spawn_individual(x, y, player_N+1)
+
+        life_durations[player_N+1] = 0
+        model_dict[player_N+1] = copy.deepcopy(model_dict[parent])
+        model_dict[player_N+1].hidden = (torch.zeros(model_dict[player_N+1].hidden[0].shape), torch.zeros(model_dict[player_N+1].hidden[1].shape))
+        mutate(player_N+1, parent, model_dict, life_durations, alpha=0.02, dynamic_alpha=True)
+
+    else:
+       deadDict[player_N] += 1
