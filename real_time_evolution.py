@@ -269,7 +269,6 @@ def pick_best_logprob(env, player_N, life_durations, spawn_positions, top=0.1):
   from math import log
   total_exp = melee_sum + range_sum + mage_sum + fish_sum + herb_sum + prosp_sum + carv_sum + alch_sum
   print("total exp: ", total_exp)
-  from math import log
   
   total = sum(specialized_exp.values())
 
