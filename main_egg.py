@@ -5,7 +5,7 @@ import random
 import copy
 import pickle
 
-from real_time_evolution import mutate, pick_best
+from real_time_evolution import mutate, pick_best, delayedSpawn
 from agent_neural_net import get_input, PolicyNet, save_state, NoCombatNet
 from logging_functions import calculate_avg_lifetime
 
@@ -123,8 +123,8 @@ for i in range(player_N):
 avg_lifetime = {}
 
 # Set up the dead dictionary
-dead_dict = {key: 0 for key in range(player_N)}
-print("dead_dict: " + dead_dict)
+dead_dict = {player+1: 0 for player in range(player_N)}
+dead_threshold = 3
 
 # Set up a list of all visited tiles by all agents
 all_visited = []
@@ -154,9 +154,9 @@ for step in range(steps):
       file.write(str(step))
   
   # Uncomment for saving replays
-  #if i%1000 == 0:
-  #  replay_file = f"/content/replay1"
-  #  replay_helper.save(replay_file, compress=True)
+  if i%1000 == 0:
+    replay_file = f"/content/replay1"
+    replay_helper.save("replay1", compress=True)
 
   current_oldest = life_durations[max(life_durations, key=life_durations.get)]
   #if current_oldest > max_lifetime:
@@ -175,28 +175,36 @@ for step in range(steps):
   for i in range(player_N):
     if env.num_agents != player_N: ##TODO: rewrite using dones
       if i+1 not in env.realm.players.entities:
-        parent = pick_best(env, player_N, life_durations, spawn_positions,)
-        #env.realm.players.cull()
+        # print("dead_dict: ", dead_dict)
+        # If an individual just died, create an "egg"
+        if dead_dict[i+1] == 1:
+          parent = pick_best(env, player_N, life_durations, spawn_positions,)
+          try:
+          # Spawn individual in the same place as parent
+            x, y = env.realm.players.entities[parent].pos
+            #x, y = random.choice(spawn_positions)
+          except:
+          # Spawn individual at a random spawn location
+            x, y = random.choice(spawn_positions)
+          spawn_positions[i+1] = (x,y)
+          #'''
+          x,y = spawn_positions[i+1]
 
-        #'''
-        try:
-        # Spawn individual in the same place as parent
-          x, y = env.realm.players.entities[parent].pos
-          #x, y = random.choice(spawn_positions)
-        except:
-        # Spawn individual at a random spawn location
-          x, y = random.choice(spawn_positions)
-        spawn_positions[i+1] = (x,y)
-        #'''
-        x,y = spawn_positions[i+1] 
+          model_dict[i+1] = copy.deepcopy(model_dict[parent])
+          model_dict[i+1].hidden = (torch.zeros(model_dict[i+1].hidden[0].shape), torch.zeros(model_dict[i+1].hidden[1].shape))
 
-        env.realm.players.spawn_individual(x, y, i+1)
-        # Upon the "birth" of a new agent, reset the life duration and visited tiles
-        life_durations[i+1] = 0
-        model_dict[i+1] = copy.deepcopy(model_dict[parent])
-        model_dict[i+1].hidden = (torch.zeros(model_dict[i+1].hidden[0].shape), torch.zeros(model_dict[i+1].hidden[1].shape))
-
-        mutate(i+1, parent, model_dict, life_durations, alpha=0.02, dynamic_alpha=True)
+          mutate(i+1, parent, model_dict, life_durations, alpha=0.02, dynamic_alpha=True)
+        # When egg gets past a certain threshhold, spawn a new agent
+        
+        if dead_dict[i+1] > dead_threshold:
+          
+          #env.realm.players.cull()
+          env.realm.players.spawn_individual(x, y, i+1)
+          dead_dict[i+1] = 0
+          life_durations[i+1] = 0
+          
+        else:
+          dead_dict[i+1] += 1
 
     # Check if agents are alive, and if someone dies ignore their action
     if i+1 in env.realm.players.entities and i+1 in obs:
