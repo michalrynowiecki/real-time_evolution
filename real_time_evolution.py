@@ -209,7 +209,7 @@ def fitness(env, player_N, spawn_positions):
   return fitness_dict
 
 #Select top beta % of agents that travelled the longest distances/lived the longest/both and then from those randomly pick the parent
-def pick_best_logprob(env, player_N, life_durations, spawn_positions, top=0.1):
+def pick_best_prob_log(env):
 
   # Create a dictionary where each entry is the different exp
   exp_dict = {i: {
@@ -267,19 +267,18 @@ def pick_best_logprob(env, player_N, life_durations, spawn_positions, top=0.1):
   specialized_exp = {i: max(player_exp.values()) for i, player_exp in exp_dict.items()}
   print(specialized_exp)
   from math import log
-  total_exp = melee_sum + range_sum + mage_sum + fish_sum + herb_sum + prosp_sum + carv_sum + alch_sum
-  print("total exp: ", total_exp)
-  
-  total = sum(specialized_exp.values())
+  # total_exp = melee_sum + range_sum + mage_sum + fish_sum + herb_sum + prosp_sum + carv_sum + alch_sum
 
-  final_probs_dict = {key: log(value, 2) for key, value in specialized_exp.items()}
+  probs_dict = {key: log(value, 2) for key, value in specialized_exp.items()}
 
-  normalized_dict = {key: value / total for key, value in final_probs_dict.items()}
+  total = sum(probs_dict.values())
+
+  normalized_dict = {key: value / total for key, value in probs_dict.items()}
   print(normalized_dict)
 
   
   items = list(normalized_dict.keys())
   probabilities = list(normalized_dict.values())
   parent = random.choices(items, weights=probabilities, k=1)[0]
-  
+
   return parent
