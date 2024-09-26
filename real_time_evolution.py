@@ -193,3 +193,94 @@ def delayedSpawn(env, life_durations, model_dict, spawn_positions, deadDict, pla
 
     else:
        deadDict[player_N] += 1
+
+
+def fitness(env, player_N, spawn_positions):
+  fitness_dict = {}
+
+  # Calculate distance travelled for each agent
+  for i in range(player_N):
+    if i+1 in env.realm.players.entities:
+      fitness_dict[i+1] = get_distance_travelled(env.realm.players.entities, spawn_positions, i+1)
+
+  # Get index of max value (the best agent number)
+  best_agent = max(fitness_dict, key=fitness_dict.get)
+
+  return fitness_dict
+
+#Select top beta % of agents that travelled the longest distances/lived the longest/both and then from those randomly pick the parent
+def pick_best_logprob(env, player_N, life_durations, spawn_positions, top=0.1):
+
+  # Create a dictionary where each entry is the different exp
+  exp_dict = {i: {
+    "melee":  2,
+    "range":  2,
+    "mage":   2,
+    "fish":   2,
+    "herb":   2,
+    "prosp":  2,
+    "carv":   2,
+    "alch":   2
+  } for i in env.realm.players.entities}
+  
+
+  melee_sum = 0.01
+  range_sum = 0.01
+  mage_sum = 0.01
+  fish_sum = 0.01
+  herb_sum = 0.01
+  prosp_sum = 0.01
+  carv_sum = 0.01
+  alch_sum = 0.01
+
+
+  # for i in range(player_N):
+  for player in env.realm.players.entities:
+    i = env.realm.players.entities[player].id.val
+    #i = env.realm.players.entities[i+1].id.val - 1
+
+    exp_dict[i]["melee"] = env.realm.players.entities[i].melee_exp.val
+    melee_sum += env.realm.players.entities[i].melee_exp.val
+
+    exp_dict[i]["range"] = env.realm.players.entities[i].range_exp.val
+    range_sum += env.realm.players.entities[i].range_exp.val
+
+    exp_dict[i]["mage"] = env.realm.players.entities[i].mage_exp.val
+    mage_sum += env.realm.players.entities[i].mage_exp.val
+
+    exp_dict[i]["fishing"] = env.realm.players.entities[i].fishing_exp.val
+    fish_sum += env.realm.players.entities[i].fishing_exp.val
+
+    exp_dict[i]["herbalism"] = env.realm.players.entities[i].herbalism_exp.val
+    herb_sum += env.realm.players.entities[i].herbalism_exp.val
+
+    exp_dict[i]["prosp"] = env.realm.players.entities[i].prospecting_exp.val
+    prosp_sum += env.realm.players.entities[i].prospecting_exp.val
+
+    exp_dict[i]["carv"] = env.realm.players.entities[i].carving_exp.val
+    carv_sum += env.realm.players.entities[i].carving_exp.val
+
+    exp_dict[i]["alch"] = env.realm.players.entities[i].alchemy_exp.val
+    alch_sum += env.realm.players.entities[i].alchemy_exp.val
+
+  # For each of the players, assign the highest exp value
+  specialized_exp = {i: max(player_exp.values()) for i, player_exp in exp_dict.items()}
+  print(specialized_exp)
+  from math import log
+  total_exp = melee_sum + range_sum + mage_sum + fish_sum + herb_sum + prosp_sum + carv_sum + alch_sum
+  print("total exp: ", total_exp)
+  from math import log
+  
+  total = sum(specialized_exp.values())
+
+  final_probs_dict = {key: log(value, 2) for key, value in specialized_exp.items()}
+
+  normalized_dict = {key: value / total for key, value in final_probs_dict.items()}
+  print(normalized_dict)
+
+  
+  items = list(normalized_dict.keys())
+  probabilities = list(normalized_dict.values())
+  parent = random.choices(items, weights=probabilities, k=1)[0]
+  
+  return parent
