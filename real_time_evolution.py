@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 import random
-from math import ceil, sqrt
+from math import ceil, sqrt, log
 
 #Checking for how long each of the agents has travelled during the course of its life
 def get_distance_travelled(entities, spawn_positions, agent_number):
@@ -265,18 +265,18 @@ def pick_best_prob_log(env):
 
   # For each of the players, assign the highest exp value
   specialized_exp = {i: max(player_exp.values()) for i, player_exp in exp_dict.items()}
-  print(specialized_exp)
-  from math import log
-  # total_exp = melee_sum + range_sum + mage_sum + fish_sum + herb_sum + prosp_sum + carv_sum + alch_sum
+  #print(specialized_exp)
+  #total_exp = melee_sum + range_sum + mage_sum + fish_sum + herb_sum + prosp_sum + carv_sum + alch_sum
 
+  # take log_2 to even out the chances (change the log base to change how important having lots of exp is)
   probs_dict = {key: log(value, 2) for key, value in specialized_exp.items()}
 
+  # Normalize
   total = sum(probs_dict.values())
-
   normalized_dict = {key: value / total for key, value in probs_dict.items()}
-  print(normalized_dict)
-
+  #print(normalized_dict)
   
+  # pick based on probability
   items = list(normalized_dict.keys())
   probabilities = list(normalized_dict.values())
   parent = random.choices(items, weights=probabilities, k=1)[0]
